@@ -12,6 +12,7 @@ class InscriptionPage extends StatefulWidget {
 
 class _InscriptionPageState extends State<InscriptionPage> {
   final _formKey = GlobalKey<FormState>();
+  final _nomCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _mdpCtrl = TextEditingController();
   final _confirmerCtrl = TextEditingController();
@@ -19,6 +20,7 @@ class _InscriptionPageState extends State<InscriptionPage> {
 
   @override
   void dispose() {
+    _nomCtrl.dispose();
     _emailCtrl.dispose();
     _mdpCtrl.dispose();
     _confirmerCtrl.dispose();
@@ -31,10 +33,11 @@ class _InscriptionPageState extends State<InscriptionPage> {
     final ok = await context.read<AuthProvider>().inscription(
       _emailCtrl.text,
       _mdpCtrl.text,
+      nom: _nomCtrl.text,
     );
 
     if (ok && mounted) {
-      Navigator.pop(context); // Retourner à l'écran de connexion / AuthGate gère la suite
+      Navigator.pop(context);
     }
   }
 
@@ -57,6 +60,26 @@ class _InscriptionPageState extends State<InscriptionPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     TextFormField(
+                      controller: _nomCtrl,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'Nom complet / Exploitation',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                      validator: (valeur) {
+                        final v = (valeur ?? '').trim();
+                        if (v.isEmpty) {
+                          return 'Veuillez saisir un nom';
+                        }
+                        if (v.length < 2) {
+                          return 'Nom trop court (2 caractères minimum)';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
                       controller: _emailCtrl,
                       keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
@@ -70,10 +93,17 @@ class _InscriptionPageState extends State<InscriptionPage> {
                     TextFormField(
                       controller: _mdpCtrl,
                       obscureText: _masquer,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Mot de passe',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.lock_outline),
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _masquer ? Icons.visibility : Icons.visibility_off,
+                          ),
+                          onPressed: () =>
+                              setState(() => _masquer = !_masquer),
+                        ),
                       ),
                       validator: validerMotDePasse,
                     ),
@@ -97,7 +127,9 @@ class _InscriptionPageState extends State<InscriptionPage> {
                       const SizedBox(height: 16),
                       Text(
                         auth.erreur!,
-                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -110,7 +142,7 @@ class _InscriptionPageState extends State<InscriptionPage> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                          : const Text("Créer mon compte"),
+                          : const Text('Créer mon compte'),
                     ),
                   ],
                 ),

@@ -26,7 +26,14 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider(authService)),
-        ChangeNotifierProvider(create: (_) => ZonesProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, ZonesProvider>(
+          create: (_) => ZonesProvider(),
+          update: (_, auth, previous) {
+            final zones = previous ?? ZonesProvider();
+            zones.definirUtilisateur(auth.utilisateur?.uid);
+            return zones;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => MeteoProvider()..charger()),
       ],
       child: const AgriSmartApp(),
