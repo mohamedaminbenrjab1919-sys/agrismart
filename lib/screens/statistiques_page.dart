@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:agrismart/providers/zones_provider.dart';
 import 'package:agrismart/widgets/meteo_card.dart';
+import 'package:agrismart/providers/recoltes_provider.dart';
 
 class StatistiquesPage extends StatelessWidget {
   const StatistiquesPage({super.key});
@@ -10,14 +11,16 @@ class StatistiquesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Récupération des zones via Provider (watch pour écouter les changements)
     final zones = context.watch<ZonesProvider>().zones;
+    final recoltes = context.watch<RecoltesProvider>();
 
     // Tri des zones de la plus sèche à la plus humide
     final zonesTriees = [...zones]
       ..sort((a, b) => a.humidite.compareTo(b.humidite));
     final int totalZones = zones.length;
     final int zonesAIrriguer = zones.where((z) => z.besoinIrrigation).length;
-    final int pourcentage =
-    totalZones > 0 ? (zonesAIrriguer * 100 / totalZones).round() : 0;
+    final int pourcentage = totalZones > 0
+        ? (zonesAIrriguer * 100 / totalZones).round()
+        : 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -35,22 +38,59 @@ class StatistiquesPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('État Global',
-                      style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 12),
-                  Text('Total des zones : $totalZones'),
                   Text(
-                      'Zones nécessitant une irrigation : $zonesAIrriguer ($pourcentage%)'),
+                    'Statistiques des récoltes',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  Text('Nombre de récoltes : ${recoltes.nombreRecoltes}'),
+                  Text(
+                    'Quantité totale : '
+                    '${recoltes.quantiteTotale.toStringAsFixed(1)} kg',
+                  ),
+                  const SizedBox(height: 8),
+                  ...recoltes.cultures.map(
+                    (culture) => ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.agriculture),
+                      title: Text(culture),
+                      trailing: Text(
+                        '${recoltes.quantiteParCulture(culture).toStringAsFixed(1)} kg',
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
-          Text('Zones par humidité (plus sèche en premier)',
-              style: Theme.of(context).textTheme.titleMedium),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'État Global',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  Text('Total des zones : $totalZones'),
+                  Text(
+                    'Zones nécessitant une irrigation : $zonesAIrriguer ($pourcentage%)',
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Zones par humidité (plus sèche en premier)',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           ...zonesTriees.map(
-                (z) => ListTile(
+            (z) => ListTile(
               title: Text(z.nom),
               subtitle: Text('Culture : ${z.culture}'),
               trailing: Text(
@@ -66,5 +106,4 @@ class StatistiquesPage extends StatelessWidget {
       ),
     );
   }
-
 }
