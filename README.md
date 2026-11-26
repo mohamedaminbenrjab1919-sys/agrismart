@@ -1,17 +1,43 @@
-# agrismart
+# AgriSmart
 
-A new Flutter project.
+AgriSmart est une application Flutter de gestion agricole pour suivre les zones,
+la météo, les statistiques et les récoltes.
 
-## Getting Started
+## Fonctionnalités
+- Connexion et inscription Firebase ou authentification locale.
+- Gestion des zones agricoles.
+- Météo via une API HTTP.
+- Suivi des récoltes : ajout, modification, suppression et historique.
+- Quantité totale et statistiques par culture.
+- Sauvegarde durable des récoltes avec `shared_preferences`.
+- Navigation par onglets et gestion d’état avec Provider.
 
-This project is a starting point for a Flutter application.
+## Prérequis
+- Flutter SDK compatible avec Dart 3.
+- Android Studio / SDK Android ou un autre périphérique configuré pour Flutter.
+- Pour Firebase : projet configuré avec les fichiers de plateforme appropriés.
 
-A few resources to get you started if this is your first Flutter project:
+## Installation
+```bash
+flutter pub get
+flutter run
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Authentification
+Le mode d’authentification est défini dans `lib/config.dart` :
+- `utiliserFirebase = true` utilise Firebase Authentication.
+- `utiliserFirebase = false` utilise l’authentification locale de démonstration.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Structure
+- `lib/models` : modèles métier.
+- `lib/providers` : état partagé.
+- `lib/screens` : écrans de l’application.
+- `lib/services` : authentification et météo.
+- `lib/theme` : thèmes clair et sombre.
+
+## Vérification
+```bash
+flutter analyze
+flutter test
+flutter build apk
+```

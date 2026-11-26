@@ -4,6 +4,7 @@ import 'package:agrismart/providers/zones_provider.dart';
 import 'package:agrismart/screens/profil_page.dart';
 import 'package:agrismart/screens/statistiques_page.dart';
 import 'package:agrismart/screens/zones_page.dart';
+import 'package:agrismart/screens/recoltes_page.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -18,13 +19,16 @@ class AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     // select : on ne reconstruit la barre que si le nombre de zones à irriguer change
-    final aIrriguer = context.select<ZonesProvider, int>((p) => p.nombreAIrriguer);
+    final aIrriguer = context.select<ZonesProvider, int>(
+      (p) => p.nombreAIrriguer,
+    );
 
     return Scaffold(
       body: IndexedStack(
         index: _onglet,
         children: const [
           ZonesPage(),
+          RecoltesPage(),
           StatistiquesPage(),
           ProfilPage(),
         ],
@@ -49,6 +53,11 @@ class AppShellState extends State<AppShell> {
               child: const Icon(Icons.grass),
             ),
             label: 'Zones',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.inventory_2_outlined),
+            selectedIcon: Icon(Icons.inventory_2),
+            label: 'Récoltes',
           ),
           const NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),
