@@ -4,9 +4,84 @@ import 'package:agrismart/models/utilisateur.dart';
 import 'package:agrismart/providers/zones_provider.dart';
 import 'package:agrismart/providers/auth_provider.dart';
 import 'package:agrismart/screens/a_propos_page.dart';
+import 'package:agrismart/screens/face_scan_page.dart';
+import 'package:agrismart/services/face_auth_storage_service.dart';
 
-class ProfilPage extends StatelessWidget {
+class ProfilPage extends StatefulWidget {
   const ProfilPage({super.key});
+
+  @override
+  State<ProfilPage> createState() => _ProfilPageState();
+}
+
+class _ProfilPageState extends State<ProfilPage> {
+  final FaceAuthStorageService _faceStorage = FaceAuthStorageService();
+  bool _visageEnregistre = false;
+  String? _emailVisage;
+  bool _chargementVisage = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _chargerEtatVisage();
+  }
+
+  Future<void> _chargerEtatVisage() async {
+    final existe = await _faceStorage.aUnVisageEnregistre();
+    final email = await _faceStorage.lireEmailAssocie();
+    if (!mounted) return;
+    setState(() {
+      _visageEnregistre = existe;
+      _emailVisage = email;
+      _chargementVisage = false;
+    });
+  }
+
+  Future<void> _enregistrerVisage(
+      BuildContext context,
+      Utilisateur? utilisateur,
+      ) async {
+    final email = utilisateur?.email.trim();
+    if (email == null || email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Impossible de récupérer l\'email du compte.'),
+        ),
+      );
+      return;
+    }
+
+    final embedding = await Navigator.push<List<double>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const FaceScanPage(mode: ModeScanVisage.inscription),
+      ),
+    );
+
+    if (embedding == null || embedding.isEmpty || !context.mounted) return;
+
+    await _faceStorage.enregistrerVisage(
+      email: email,
+      embedding: embedding,
+    );
+    await _chargerEtatVisage();
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Visage enregistré avec succès pour ce compte.'),
+      ),
+    );
+  }
+
+  Future<void> _supprimerVisage(BuildContext context) async {
+    await _faceStorage.supprimerVisage();
+    await _chargerEtatVisage();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Données faciales supprimées.')),
+    );
+  }
 
   Future<void> _modifierNom(
       BuildContext context,
@@ -168,6 +243,36 @@ class ProfilPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.face_retouching_natural),
+            title: Text(
+              _visageEnregistre
+                  ? 'Mettre à jour mon visage'
+                  : 'Enregistrer mon visage',
+            ),
+            subtitle: Text(
+              _chargementVisage
+                  ? 'Vérification...'
+                  : _visageEnregistre
+                  ? 'Enregistré pour ${_emailVisage ?? 'ce compte'}'
+                  : 'Aucun visage enregistré',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: (occupe || _chargementVisage)
+                ? null
+                : () => _enregistrerVisage(context, utilisateur),
+          ),
+          if (_visageEnregistre) ...[
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.no_accounts_outlined),
+              title: const Text('Supprimer le visage enregistré'),
+              onTap: (occupe || _chargementVisage)
+                  ? null
+                  : () => _supprimerVisage(context),
+            ),
+          ],
           const Divider(),
           ListTile(
             leading: const Icon(Icons.edit_outlined),

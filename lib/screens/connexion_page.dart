@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:agrismart/providers/auth_provider.dart';
+import 'package:agrismart/screens/face_scan_page.dart';
 import 'package:agrismart/screens/inscription_page.dart';
+import 'package:agrismart/services/face_auth_storage_service.dart';
 
 String? validerEmail(String? valeur) {
   final v = (valeur ?? '').trim();
@@ -28,12 +30,15 @@ class _ConnexionPageState extends State<ConnexionPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _mdpCtrl = TextEditingController();
+  final _mdpFocus = FocusNode();
+  final FaceAuthStorageService _faceStorage = FaceAuthStorageService();
   bool _masquer = true;
 
   @override
   void dispose() {
     _emailCtrl.dispose();
     _mdpCtrl.dispose();
+    _mdpFocus.dispose();
     super.dispose();
   }
 
@@ -43,6 +48,49 @@ class _ConnexionPageState extends State<ConnexionPage> {
     await context.read<AuthProvider>().connexion(
       _emailCtrl.text,
       _mdpCtrl.text,
+    );
+  }
+
+  Future<void> _connexionParVisage() async {
+    final existe = await _faceStorage.aUnVisageEnregistre();
+    if (!mounted) return;
+
+    if (!existe) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Aucun visage enregistré. Connectez-vous d\'abord puis enregistrez votre visage dans Profil.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final embeddingRef = await _faceStorage.lireEmbeddingAssocie();
+    final emailAssocie = await _faceStorage.lireEmailAssocie();
+    if (!mounted || embeddingRef == null || emailAssocie == null) return;
+
+    final reconnu = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FaceScanPage(
+          mode: ModeScanVisage.connexion,
+          embeddingReference: embeddingRef,
+        ),
+      ),
+    );
+
+    if (reconnu != true || !mounted) return;
+
+    _emailCtrl.text = emailAssocie;
+    _mdpFocus.requestFocus();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Visage reconnu ($emailAssocie). Saisissez votre mot de passe.',
+        ),
+      ),
     );
   }
 
@@ -100,13 +148,16 @@ class _ConnexionPageState extends State<ConnexionPage> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _mdpCtrl,
+                      focusNode: _mdpFocus,
                       obscureText: _masquer,
                       decoration: InputDecoration(
                         labelText: 'Mot de passe',
                         border: const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
-                          icon: Icon(_masquer ? Icons.visibility : Icons.visibility_off),
+                          icon: Icon(
+                            _masquer ? Icons.visibility : Icons.visibility_off,
+                          ),
                           onPressed: () {
                             setState(() {
                               _masquer = !_masquer;
@@ -120,7 +171,9 @@ class _ConnexionPageState extends State<ConnexionPage> {
                       const SizedBox(height: 16),
                       Text(
                         auth.erreur!,
-                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -134,6 +187,12 @@ class _ConnexionPageState extends State<ConnexionPage> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                           : const Text('Se connecter'),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: auth.occupe ? null : _connexionParVisage,
+                      icon: const Icon(Icons.face_retouching_natural),
+                      label: const Text('Se connecter avec le visage'),
                     ),
                     const SizedBox(height: 12),
                     TextButton(
